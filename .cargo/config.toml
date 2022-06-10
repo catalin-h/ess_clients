@@ -1,0 +1,8 @@
+[env]
+ESS_ADMIN_CERT="./certs/admin/admin-client-crt.pem"
+ESS_ADMIN_CERT_KEY="./certs/admin/admin-client-key.pem"
+ESS_ADMIN_ROOT_CA="./certs/admin/admin-root-ca.crt"
+ESS_WS_URL="https://ess.local:8081"
+ESS_PAM_CERT="./certs/pam/pam-client-crt.pem"
+ESS_PAM_CERT_KEY="./certs/pam/pam-client-key.pem"
+ESS_PAM_ROOT_CA="./certs/pam/pam-root-ca.crt"

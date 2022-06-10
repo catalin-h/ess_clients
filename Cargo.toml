@@ -1,0 +1,38 @@
+[package]
+name = "ess_clients"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ess_admin"
+path = "src/main.rs"
+
+[lib]
+name = "ess"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies.hyper-rustls]
+version = "^0.23"
+default-features = false
+features = ["tokio-runtime", "native-tokio", "http1", "logging"]
+
+[dependencies.rustls]
+version = "^0.20"
+default-features = false
+
+[dependencies.tokio]
+version = "1"
+features = ["full"]
+
+[dependencies.hyper]
+version = "0.14"
+features = ["client", "http1"]
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "^3", features = ["derive"] }
+serde = { version = "^1", features = ["derive"] }
+serde_json = "^1"
+log = "0.4"
+rustls-pemfile = "^1"
