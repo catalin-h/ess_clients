@@ -58,76 +58,27 @@ pub struct UserUpdate {
     last_name: Option<String>,
 }
 
-fn default_url(admin: bool) -> String {
-    match std::env::var("ESS_WS_URL") {
-        Ok(url) => url,
-        _ => format!("https://ess.local:{}", if admin { 8081 } else { 8080 }),
-    }
-}
-
-fn default_root_ca_file(admin: bool) -> String {
-    match std::env::var(if admin {
-        "ESS_ADMIN_ROOT_CA"
-    } else {
-        "ESS_PAM_ROOT_CA"
-    }) {
-        Ok(url) => url,
-        _ => format!(
-            "./certs/{0}/{0}-root-ca.crt",
-            if admin { "admin" } else { "pam" }
-        ),
-    }
-}
-
-fn default_admin_cert_file(admin: bool) -> String {
-    match std::env::var(if admin {
-        "ESS_ADMIN_CERT"
-    } else {
-        "ESS_PAM_CERT"
-    }) {
-        Ok(url) => url,
-        _ => format!(
-            "./certs/{0}/{0}-client-crt.pem",
-            if admin { "admin" } else { "pam" }
-        ),
-    }
-}
-
-fn default_admin_cert_key_file(admin: bool) -> String {
-    match std::env::var(if admin {
-        "ESS_ADMIN_CERT_KEY"
-    } else {
-        "ESS_PAM_CERT_KEY"
-    }) {
-        Ok(url) => url,
-        _ => format!(
-            "./certs/{0}/{0}-client-key.pem",
-            if admin { "admin" } else { "pam" }
-        ),
-    }
-}
-
 #[derive(clap::Parser)]
 pub struct ConnectionDetails {
     /// This flag controls if we need to connect as PAM user. By default the admin connection details will be used.
     #[clap(long)]
-    pub is_pam: bool,
+    pub pam: bool,
     /// The webservice host url
     /// To skip this required args set ESS_WS_URL envar
-    #[clap(long, default_value_t = default_url(true))]
-    pub url: String,
+    #[clap(long)]
+    pub url: Option<String>,
     /// Root CA file path
     /// To skip this required args set ESS_ROOT_CA envar
-    #[clap(long, default_value_t = default_root_ca_file(true))]
-    pub cafile: String,
+    #[clap(long)]
+    pub cafile: Option<String>,
     /// The admin client certificate file path
     /// To skip this required args set ESS_ADMIN_CERT envar
-    #[clap(long, default_value_t = default_admin_cert_file(true))]
-    pub cert: String,
+    #[clap(long)]
+    pub cert: Option<String>,
     /// The admin client certificate private key file path
     /// To skip this required args set ESS_ADMIN_CERT_KEY envar
-    #[clap(long, default_value_t = default_admin_cert_key_file(true))]
-    pub key: String,
+    #[clap(long)]
+    pub key: Option<String>,
 }
 
 #[derive(Subcommand)]
