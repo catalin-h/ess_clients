@@ -1,37 +1,64 @@
 pub(crate) mod ess;
 
 use std::{
-    ffi::CStr,
+    ffi::{CStr, CString},
     os::raw::{c_char, c_int},
 };
 
-/// OTP code verification was ok
-pub const ESS_OK: c_int = 0;
-/// OTP code verification failed
-pub const ESS_OTP_VERIFY_FAILED: c_int = -1;
-/// The username arg is invalid
-pub const ESS_INVALID_USER_ARG: c_int = -2;
-/// The otp arg is invalid
-pub const ESS_INVALID_OTP_ARG: c_int = -3;
-/// The username is not found
-pub const ESS_USERNAME_NOT_FOUND: c_int = -4;
-/// PAM service general error, e.g. not available
-pub const ESS_PAM_SERVICE_ERROR: c_int = 1;
-/// The unknown error
-pub const ESS_UNKNOWN_ERROR: c_int = 255;
+use std::cell::RefCell;
+thread_local! {
+    pub static LAST_ERROR: RefCell<CString> = RefCell::default();
+}
 
+fn set_last_error_str(err_str: &str) {
+    LAST_ERROR.with(|refcs: &RefCell<CString>| {
+        *refcs.borrow_mut() = CString::new(err_str).unwrap_or_default();
+    })
+}
+
+/// Returns the last error, as a description string, that was generated after calling the ess pam API.
+/// This function should be called only if the ess pam API returned [`ESS_ERROR`](ESS_ERROR).
 #[no_mangle]
-pub extern "C" fn ess_errstr(err: c_int) -> *const c_char {
-    match err {
-        ESS_OK => "OK",
-        ESS_OTP_VERIFY_FAILED => "OTP verify failed",
-        ESS_INVALID_USER_ARG => "Invalid input user name",
-        ESS_INVALID_OTP_ARG => "Invalid input OTP code",
-        ESS_USERNAME_NOT_FOUND => "Username not found",
-        ESS_PAM_SERVICE_ERROR => "PAM service error",
-        _ => "unknown",
+pub extern "C" fn ess_pam_last_error_str() -> *const c_char {
+    LAST_ERROR.with(|refcs: &RefCell<CString>| refcs.borrow().as_ptr())
+}
+
+/// Request finished without errors
+pub const ESS_OK: c_int = 0;
+/// Request finished with errors.
+/// Use ess_pam_last_error_str() to get the last error string for more details
+pub const ESS_ERROR: c_int = -1;
+
+/// Verify one time password for the unique username
+///
+/// Returns [`ESS_OK`](ESS_OK) if the one time password verification succeeds
+/// Returns a non-zero value in case of an error. Use ess_pam_last_error_str
+/// to get the last error string.
+#[no_mangle]
+pub extern "C" fn verify_otp(username: *const c_char, otp: *const c_char) -> c_int {
+    let user_name = match to_str(username) {
+        Some(user) => user,
+        None => {
+            set_last_error_str("Invalid user name arg");
+            return ESS_ERROR;
+        }
+    };
+
+    let one_time_psswd = match to_str(otp) {
+        Some(otp) => otp,
+        None => {
+            set_last_error_str("Invalid one time password arg");
+            return ESS_ERROR;
+        }
+    };
+
+    match ess::verity_username_otp(user_name, one_time_psswd) {
+        Ok(_) => ESS_OK,
+        Err(e) => {
+            set_last_error_str(&format!("Error: {}", e));
+            ESS_ERROR
+        }
     }
-    .as_ptr() as *const c_char
 }
 
 fn to_str(c_string: *const c_char) -> Option<&'static str> {
@@ -42,25 +69,27 @@ fn to_str(c_string: *const c_char) -> Option<&'static str> {
     unsafe { CStr::from_ptr(c_string) }.to_str().ok()
 }
 
-/// Verify one time password for the unique username
-///
-/// Returns [`ESS_OK`](ESS_OK) if the one time password verification succeeds
-/// Returns a non-zero value in case of an error. Use [`ess_errstr`](ess_errstr)
-/// to get the error string.
-#[no_mangle]
-pub extern "C" fn verify_otp(username: *const c_char, otp: *const c_char) -> c_int {
-    let user_name = match to_str(username) {
-        Some(user) => user,
-        None => return ESS_INVALID_USER_ARG,
-    };
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::CStr;
 
-    let one_time_psswd = match to_str(otp) {
-        Some(otp) => otp,
-        None => return ESS_INVALID_OTP_ARG,
-    };
-
-    match ess::verity_username_otp(user_name, one_time_psswd) {
-        Ok(_) => ESS_OK,
-        Err(_) => ESS_OTP_VERIFY_FAILED,
+    // return error scenario
+    // Make sure you to run tests with -- --nocapture
+    // https://stackoverflow.com/questions/25106554/why-doesnt-println-work-in-rust-unit-tests
+    #[test]
+    fn test_ret_error() {
+        assert_eq!(
+            verify_otp(
+                CString::new("rust").unwrap_or_default().as_ptr(),
+                CString::new("123456").unwrap_or_default().as_ptr()
+            ),
+            ESS_ERROR
+        );
+        let errstr = unsafe { CStr::from_ptr(ess_pam_last_error_str()) }
+            .to_str()
+            .unwrap();
+        println!("verify_otp error: {}", errstr);
+        assert!(!errstr.is_empty());
     }
 }
