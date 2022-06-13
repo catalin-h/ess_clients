@@ -8,8 +8,8 @@ use hyper_rustls::HttpsConnector;
 use rustls::{Certificate, PrivateKey, RootCertStore};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-use std::fs::File;
-use std::io::BufReader;
+use std::{fs::File, io::BufReader, time::Duration};
+use tokio::{runtime, time::timeout};
 
 fn default_name() -> String {
     "noname".to_string()
@@ -265,6 +265,7 @@ impl EssHttpsClient {
         Ok(url)
     }
 
+    #[allow(dead_code)]
     pub async fn get_user(&self, username: &str) -> Result<JsonValue> {
         let path = format!("/api/admin/employee/{}", username);
         let url = self.make_url(&path)?;
@@ -291,6 +292,7 @@ impl EssHttpsClient {
         serde_json::from_slice(&body).map_or_else(|_| Ok(JsonValue::default()), |j| Ok(j))
     }
 
+    #[allow(dead_code)]
     pub async fn add_user(&self, user: User, qr_code: bool) -> Result<String> {
         let url = self.make_url("/api/admin/employee")?;
         let body = serde_json::to_value(&user)?;
@@ -315,6 +317,7 @@ impl EssHttpsClient {
         Ok(String::from_utf8_lossy(&body).to_string())
     }
 
+    #[allow(dead_code)]
     pub async fn update_user(&self, username: &str, data: UserUpdate) -> Result<()> {
         let path = format!("/api/admin/employee/{}", username);
         let url = self.make_url(&path)?;
@@ -336,6 +339,7 @@ impl EssHttpsClient {
         handle_http_status(response.status(), username)
     }
 
+    #[allow(dead_code)]
     pub async fn delete_user(&self, username: &str) -> Result<()> {
         let path = format!("/api/admin/employee/{}", username);
         let url = self.make_url(&path)?;
@@ -353,8 +357,7 @@ impl EssHttpsClient {
     }
 
     pub async fn verify_user(&self, username: &str, code: &str) -> Result<()> {
-        let path = format!("/api/admin/employee/{}", username);
-        let url = self.make_url(&path)?;
+        let url = self.make_url("/api/pam/verify")?;
         let body = serde_json::json!({
             "username": username,
             "oneTimePassword": code,
@@ -379,9 +382,26 @@ impl EssHttpsClient {
 
 pub fn verity_username_otp(user_name: &str, otp_code: &str) -> Result<()> {
     let client = EssBuilder::new(ConnectionDetails::new_as_pam()).build()?;
-    let runtime = tokio::runtime::Builder::new_current_thread()
+    let runtime = runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
 
-    runtime.block_on(async { client.verify_user(user_name, otp_code).await })
+    // Currently we can't config the hyper_rutls httpsconnector in order to set a connection timeout.
+    // Can't even access the inner httpconnector object.
+    // Therefore we can use the tokio timeout API to drop the future an hopping that tokio
+    // runtime will handle the connection close.
+    runtime.block_on(async {
+        match timeout(
+            Duration::from_secs(30),
+            client.verify_user(user_name, otp_code),
+        )
+        .await
+        {
+            Ok(result) => result,
+            Err(e) => anyhow::bail!(
+                "No server response, request ended with timeout error: {}",
+                e
+            ),
+        }
+    })
 }
