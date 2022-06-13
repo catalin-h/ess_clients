@@ -1,0 +1,30 @@
+language = "C"
+
+# Options for wrapping the contents of the header:
+
+# An optional string of text to output at the beginning of the generated file
+# default: doesn't emit anything
+header = "/* This is the ESS PAM API for verifying one time passwords for username*/"
+
+# An optional name to use as an include guard
+# default: doesn't emit an include guard
+include_guard = "ess_pam_include_h"
+
+# Whether to include a comment with the version of cbindgen used to generate the file
+# default: false
+include_version = true
+
+# Include doc comments from Rust as documentation
+documentation = true
+
+# How the generated documentation should be commented.
+#
+# possible values:
+# * "c": /* like this */
+# * "c99": // like this
+# * "c++": /// like this
+# * "doxy": like C, but with leading *'s on each line
+# * "auto": "c++" if that's the language, "doxy" otherwise
+#
+# default: "auto"
+documentation_style = "doxy"

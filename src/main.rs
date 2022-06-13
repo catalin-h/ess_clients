@@ -3,8 +3,8 @@ pub mod ess;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use ess::EssBuilder;
+use ess::{ConnectionDetails, User, UserUpdate};
 use log::{Metadata, Record};
-use serde::{Deserialize, Serialize};
 
 struct SimpleLogger {}
 
@@ -20,65 +20,6 @@ impl log::Log for SimpleLogger {
     }
 
     fn flush(&self) {}
-}
-
-fn default_name() -> String {
-    "noname".to_string()
-}
-
-#[derive(clap::Parser, Deserialize, Serialize)]
-pub struct User {
-    /// The unique user name
-    #[clap(long, short)]
-    pub username: String,
-    /// The user's first name
-    #[clap(long, short, default_value_t = String::from("noname"))]
-    #[serde(rename = "firstName", default = "default_name")]
-    pub first_name: String,
-    /// The user's last name
-    #[clap(long, short, default_value_t = String::from("noname"))]
-    #[serde(rename = "lastName", default = "default_name")]
-    pub last_name: String,
-}
-
-#[derive(clap::Parser, Deserialize, Serialize)]
-#[clap(group(
-    clap::ArgGroup::new("update-group")
-        .multiple(true)
-        .args(&["first-name", "last-name"]),
-))]
-pub struct UserUpdate {
-    /// The user's first name
-    #[clap(long, short)]
-    #[serde(rename = "firstName", default)]
-    first_name: Option<String>,
-    /// The user's last name
-    #[clap(long, short)]
-    #[serde(rename = "lastName", default)]
-    last_name: Option<String>,
-}
-
-#[derive(clap::Parser)]
-pub struct ConnectionDetails {
-    /// This flag controls if we need to connect as PAM user. By default the admin connection details will be used.
-    #[clap(long)]
-    pub pam: bool,
-    /// The webservice host url
-    /// To skip this required args set ESS_WS_URL envar
-    #[clap(long)]
-    pub url: Option<String>,
-    /// Root CA file path
-    /// To skip this required args set ESS_ROOT_CA envar
-    #[clap(long)]
-    pub cafile: Option<String>,
-    /// The admin client certificate file path
-    /// To skip this required args set ESS_ADMIN_CERT envar
-    #[clap(long)]
-    pub cert: Option<String>,
-    /// The admin client certificate private key file path
-    /// To skip this required args set ESS_ADMIN_CERT_KEY envar
-    #[clap(long)]
-    pub key: Option<String>,
 }
 
 #[derive(Subcommand)]
