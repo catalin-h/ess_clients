@@ -84,8 +84,8 @@ pub struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    static LOGGER: SimpleLogger = SimpleLogger {};
-    log::set_logger(&LOGGER).map_err(|e| anyhow::anyhow!("Failed to set logger: {}", e))?;
+    log::set_boxed_logger(Box::new(SimpleLogger {}))
+        .map_err(|e| anyhow::anyhow!("Failed to set logger: {}", e))?;
 
     let cli = Cli::parse();
 

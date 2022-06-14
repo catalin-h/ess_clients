@@ -43,12 +43,15 @@ features = ["full"]
 version = "0.14"
 features = ["client", "http1"]
 
+[dependencies.log]
+version = "^0.4"
+features = ["std"]
+
 [dependencies]
 anyhow = "1.0"
 clap = { version = "^3.2", features = ["derive"] }
 serde = { version = "^1", features = ["derive"] }
 serde_json = "^1"
-log = "0.4"
 rustls-pemfile = "^1"
 
 [build-dependencies]
