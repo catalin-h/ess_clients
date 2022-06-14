@@ -15,7 +15,7 @@ fn main() {
 
     // Note only a limited set of envars are available for the build script
     let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not provided");
-    //let out_dir = env::var("OUT_DIR").expect("OUT_DIR not provided");
+    //let out_dir = env::var("OUT_DIR").expect("OUT_DIR not provided (see --out-dir)");
 
     cbindgen::generate(crate_dir)
         .expect("Unable to generate bindings")

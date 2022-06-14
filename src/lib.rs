@@ -1,13 +1,13 @@
 pub(crate) mod ess;
 
 use std::{
+    cell::RefCell,
     ffi::{CStr, CString},
     os::raw::{c_char, c_int},
 };
 
-use std::cell::RefCell;
 thread_local! {
-    pub static LAST_ERROR: RefCell<CString> = RefCell::default();
+    static LAST_ERROR: RefCell<CString> = RefCell::default();
 }
 
 fn set_last_error_str(err_str: &str) {
@@ -21,6 +21,17 @@ fn set_last_error_str(err_str: &str) {
 #[no_mangle]
 pub extern "C" fn ess_pam_last_error_str() -> *const c_char {
     LAST_ERROR.with(|refcs: &RefCell<CString>| refcs.borrow().as_ptr())
+}
+
+// `const extern fn` definitions are unstable
+// https://github.com/rust-lang/rust/issues/64926
+// so can't use the following definition
+// pub const extern "C" fn ess_pam_version() -> *const c_char {..}
+
+/// Returns the current ESS PAM API version
+#[no_mangle]
+pub extern "C" fn ess_pam_version() -> *const c_char {
+    concat!(env!("CARGO_PKG_VERSION"), "\0").as_ptr() as *const c_char
 }
 
 /// Request finished without errors
@@ -94,5 +105,16 @@ mod tests {
             .unwrap();
         println!("verify_otp error: {}", errstr);
         assert!(!errstr.is_empty());
+    }
+
+    // Test return version
+    #[test]
+    fn test_version() {
+        let version = unsafe { CStr::from_ptr(ess_pam_version()) }
+            .to_str()
+            .unwrap();
+
+        println!("Found version: {}", version);
+        assert_eq!(version, env!("CARGO_PKG_VERSION"));
     }
 }
