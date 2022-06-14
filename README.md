@@ -107,35 +107,21 @@ In order to connect to the ESS service the PAM clients must use the proper TSL c
 2. or using the `./cert/pam` folder from current working directory
 In order to get the PAM client certificate use this [guide](https://github.com/catalin-h/ess_backend#getting-the-adminpam-client-service-root-ca-and-client-certificates)
 
-#### The current `ess` libray API
+#### The current `ess` library API
+##### Verify the one time password for user name
 ```
-/**
- * Request finished without errors
- */
-#define ESS_OK 0
-
-/**
- * Request finished with errors.
- * Use ess_pam_last_error_str() to get the last error string for more details
- */
-#define ESS_ERROR -1
-/**
- * Returns the last error, as a description string, that was generated after calling the ess pam API.
- * This function should be called only if the ess pam API returned [`ESS_ERROR`](ESS_ERROR).
- */
-const char *ess_pam_last_error_str(void);
-
-/**
- * Returns the current ESS PAM API version
- */
-const char *ess_pam_version(void);
-
-/**
- * Verify one time password for the unique username
- *
- * Returns [`ESS_OK`](ESS_OK) if the one time password verification succeeds
- * Returns a non-zero value in case of an error. Use ess_pam_last_error_str
- * to get the last error string.
- */
 int verify_otp(const char *username, const char *otp);
+```
+The function returns `ESS_OK` or `0` on success and `ESS_ERROR` or non-zero value in case of an error.
+
+##### Get the last API call error
+```
+const char *ess_pam_last_error_str(void);
+```
+This function should be called only if the `ESS PAM` API returned `ESS_ERROR` or other non-zero value.
+If the last call succeeded the last error will be reset to `"ok"` string.
+
+##### Get the ESS API version
+```
+const char *ess_pam_version(void);
 ```
