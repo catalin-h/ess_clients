@@ -18,14 +18,14 @@ fn default_name() -> String {
 #[derive(clap::Parser, Deserialize, Serialize)]
 pub struct User {
     /// The unique user name
-    #[clap(long, short)]
+    #[clap(long, short, value_parser)]
     pub username: String,
     /// The user's first name
-    #[clap(long, short, default_value_t = String::from("noname"))]
+    #[clap(long, short, value_parser, default_value_t = String::from("noname"))]
     #[serde(rename = "firstName", default = "default_name")]
     pub first_name: String,
     /// The user's last name
-    #[clap(long, short, default_value_t = String::from("noname"))]
+    #[clap(long, short, value_parser, default_value_t = String::from("noname"))]
     #[serde(rename = "lastName", default = "default_name")]
     pub last_name: String,
 }
@@ -38,11 +38,11 @@ pub struct User {
 ))]
 pub struct UserUpdate {
     /// The user's first name
-    #[clap(long, short)]
+    #[clap(long, short, value_parser)]
     #[serde(rename = "firstName", default)]
     first_name: Option<String>,
     /// The user's last name
-    #[clap(long, short)]
+    #[clap(long, short, value_parser)]
     #[serde(rename = "lastName", default)]
     last_name: Option<String>,
 }
@@ -50,23 +50,23 @@ pub struct UserUpdate {
 #[derive(clap::Parser)]
 pub struct ConnectionDetails {
     /// This flag controls if we need to connect as PAM user. By default the admin connection details will be used.
-    #[clap(long)]
+    #[clap(long, action)]
     pub pam: bool,
     /// The webservice host url
     /// To skip this required args set ESS_WS_URL envar
-    #[clap(long)]
+    #[clap(long, value_parser)]
     pub url: Option<String>,
     /// Root CA file path
     /// To skip this required args set ESS_ROOT_CA envar
-    #[clap(long)]
+    #[clap(long, value_parser)]
     pub cafile: Option<String>,
     /// The admin client certificate file path
     /// To skip this required args set ESS_ADMIN_CERT envar
-    #[clap(long)]
+    #[clap(long, value_parser)]
     pub cert: Option<String>,
     /// The admin client certificate private key file path
     /// To skip this required args set ESS_ADMIN_CERT_KEY envar
-    #[clap(long)]
+    #[clap(long, value_parser)]
     pub key: Option<String>,
 }
 
