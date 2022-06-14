@@ -53,7 +53,10 @@ pub extern "C" fn verify_otp(username: *const c_char, otp: *const c_char) -> c_i
     };
 
     match ess::verity_username_otp(user_name, one_time_psswd) {
-        Ok(_) => ESS_OK,
+        Ok(_) => {
+            set_last_error_str("ok");
+            ESS_OK
+        }
         Err(e) => {
             set_last_error_str(&format!("Error: {}", e));
             ESS_ERROR
