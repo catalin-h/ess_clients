@@ -5,6 +5,7 @@ use hyper::{
     Body, Method, Request, StatusCode, Uri,
 };
 use hyper_rustls::HttpsConnector;
+use hyper_timeout::TimeoutConnector;
 use rustls::{Certificate, PrivateKey, RootCertStore};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -83,6 +84,10 @@ impl ConnectionDetails {
     }
 }
 
+fn default_connection_timeout() -> Duration {
+    Duration::from_secs(30)
+}
+
 fn default_url(admin: bool) -> String {
     match std::env::var("ESS_WS_URL") {
         Ok(url) => url,
@@ -132,9 +137,11 @@ fn default_admin_cert_key_file(admin: bool) -> String {
     }
 }
 
+type EssConnector = TimeoutConnector<HttpsConnector<HttpConnector>>;
+
 pub struct EssHttpsClient {
     url: Uri,
-    client: Client<HttpsConnector<HttpConnector>, Body>,
+    client: Client<EssConnector, Body>,
 }
 
 pub struct EssBuilder {
@@ -229,7 +236,10 @@ impl EssBuilder {
             .enable_http1()
             .build();
 
-        let https_client: Client<_, Body> = Client::builder().build(https_connector);
+        let mut ess_connector = EssConnector::new(https_connector);
+
+        ess_connector.set_connect_timeout(Some(default_connection_timeout()));
+        let https_client: Client<_, Body> = Client::builder().build(ess_connector);
 
         Ok(EssHttpsClient {
             url: url,
@@ -386,13 +396,11 @@ pub fn verity_username_otp(user_name: &str, otp_code: &str) -> Result<()> {
         .enable_all()
         .build()?;
 
-    // Currently we can't config the hyper_rutls httpsconnector in order to set a connection timeout.
-    // Can't even access the inner httpconnector object.
-    // Therefore we can use the tokio timeout API to drop the future an hopping that tokio
-    // runtime will handle the connection close.
+    // Although we use the timeout connector the tokio timeout API can act as a secondary watcher
+    // that can drop the current request in the required timeout.
     runtime.block_on(async {
         match timeout(
-            Duration::from_secs(30),
+            default_connection_timeout(),
             client.verify_user(user_name, otp_code),
         )
         .await
