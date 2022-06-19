@@ -142,5 +142,9 @@ cargo tests -- --nocapture
 cargo install --path .
 ```
 The preview command will install the tool in `/home/<username>/.cargo/bin/`.
+Since the certificates must not be shared they can be installed in $HOME and
+set the `ESS_ADMIN_ROOT_CA`, `ESS_ADMIN_CERT` and `ESS_ADMIN_CERT_KEY` envars
+from .bashrc.
+
 #### The PAM access library
 TBD
