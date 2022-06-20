@@ -95,7 +95,6 @@ async fn main() -> Result<()> {
         log::LevelFilter::Info
     });
 
-    let is_pam = cli.conn.pam;
     let client = EssBuilder::new(cli.conn).build()?;
 
     match cli.action {
@@ -120,11 +119,7 @@ async fn main() -> Result<()> {
             username,
             one_time_password,
         } => {
-            if is_pam {
-                ess::verity_username_otp(&username, &one_time_password)?;
-            } else {
-                client.verify_user(&username, &one_time_password).await?;
-            }
+            client.verify_user(&username, &one_time_password).await?;
             println!("code is OK");
         }
         UserAction::GetUser { username } => {
